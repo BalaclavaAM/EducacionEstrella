@@ -2,5 +2,11 @@
     "database": "EducacionEstrella",
     "host": "172.24.41.170",
     "username": "SA",
-    "password": "Polloasado8!"
+    "password": "Polloasado8!",
+
+    "auth0":{
+        "domain": "https://dev-u6ukt4l1.us.auth0.com",
+        "client_id": "hW9hbV0uDPEYBaj97ywyfj9iaVRRGcxb",
+        "client_secret": "lmgZ4Bo9hi408sJuU6IFYAAZ7hgfqjLgkkBVWskqSoYclS07E-iiJUUK96znQdvU"
+    }
 }
