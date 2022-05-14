@@ -371,15 +371,17 @@ def login():
         logger.info(f'Params: {(user,)}')
         result = cursor.fetchall()
         validPassword = False
+        idUser = 0
         for user in result:
             #Remove trailing spaces from
             if user['password'].strip() == password:
                 validPassword = True
+                idUser=user['idUser']
         if not validPassword:
             status = 401
             raise Exception('Usuario o contraseña incorrectos')
         retorno['token']=getTokenAuth0()
-        retorno['idUser']=result['idUser']
+        retorno['idUser']=idUser
         status = 200
     except Exception as e:
         logger.error(f'Error: {str(e)}')
@@ -400,7 +402,9 @@ def financeManagement():
         token = request.headers.get('authorization')
         if token is None: raise Exception('No token provided')
         validToken = validateTokenAuth0(token)
-        if not validToken: raise Exception('Invalid token: ' + str(validToken))
+        if not validToken: 
+            status=401 
+            raise Exception('Invalid token: ' + str(validToken))
         if request.method == 'GET':
             query = QUERYS['getFinanceFromUser']
             content = request.json

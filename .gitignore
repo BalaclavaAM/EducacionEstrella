@@ -153,3 +153,4 @@ cython_debug/
 logs/restApi.log.1
 restApi.py
 restApi.py
+.vscode/settings.json
