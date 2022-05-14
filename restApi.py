@@ -11,6 +11,7 @@ from logging.handlers import RotatingFileHandler
 from authlib.integrations.flask_client import OAuth
 from requests import session
 import requests
+import encryptDecrypt
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -61,8 +62,8 @@ QUERYS= {
     "updateMarketplace": "UPDATE marketplace SET isActive = %d WHERE idCurso = %d",
     "getUser": "SELECT * FROM usuario WHERE username = %s",
     "getFinanceFromUser": "SELECT * FROM informacionFinanciera WHERE idUser = %s",
-    "insertInformacionFinanciera": "INSERT INTO informacionFinanciera ([idUser],[banco],[cuenta],[tipoCuenta]) VALUES (%d,%s,%s,%s)",
-    "updateInformacionFinanciera": "UPDATE informacionFinanciera SET [banco] = %s, [cuenta] = %s, [tipoCuenta] = %s WHERE idUser = %d",
+    "insertInformacionFinanciera": "INSERT INTO informacionFinanciera ([idUser],[banco],[cuenta],[tipoCuenta], contentHash) VALUES (%d,%s,%s,%s,%s)",
+    "updateInformacionFinanciera": "UPDATE informacionFinanciera SET [banco] = %s, [cuenta] = %s, [tipoCuenta] = %s, [contentHash]=%s WHERE idUser = %d",
 }
 
 regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
@@ -416,7 +417,13 @@ def financeManagement():
             params = (content['idUser'])
             cursor.execute(query, params)
             logger.info(f'Query: {query}')
-            retorno = cursor.fetchall()
+            retorno = cursor.fetchone()
+            contentHashed = retorno['contentHash']
+            theJsonDecrypted = encryptDecrypt.decryptString(contentHashed)
+            obj = json.dumps({'idUser':retorno['idUser'], 'banco':retorno['banco'], 'cuenta':retorno['cuenta'], 'tipoCuenta':retorno['tipoCuenta']})
+            if theJsonDecrypted.strip().lower() != obj.strip().lower():
+                status = 500
+                raise Exception('Invalid data')
             status = 200
         elif request.method == 'PUT':
             query = QUERYS['insertInformacionFinanciera']
@@ -426,7 +433,8 @@ def financeManagement():
                 if key not in content:
                     status = 400
                     raise Exception('Faltan datos', key)
-            params = (content['idUser'], content['banco'], content['cuenta'], content['tipoCuenta'])
+            contentHash = encryptDecrypt.encryptString(json.dumps({'idUser':content['idUser'], 'banco':content['banco'], 'cuenta':content['cuenta'], 'tipoCuenta':content['tipoCuenta']}))
+            params = (content['idUser'], content['banco'], content['cuenta'], content['tipoCuenta'], contentHash)
             logger.info(f'Query: {query}')
             logger.info(f'params: {params}')
             cursor.execute(query, params)
@@ -442,7 +450,8 @@ def financeManagement():
                 if key not in content:
                     status = 400
                     raise Exception('Faltan datos', key)
-            params = (content['banco'], content['cuenta'], content['tipoCuenta'], content['idUser'])
+            contentHash = encryptDecrypt.encryptString(json.dumps({'idUser':content['idUser'], 'banco':content['banco'], 'cuenta':content['cuenta'], 'tipoCuenta':content['tipoCuenta']}))
+            params = (content['banco'], content['cuenta'], content['tipoCuenta'], contentHash, content['idUser'])
             logger.info(f'Query: {query}')
             logger.info(f'params: {params}')
             cursor.execute(query, params)
