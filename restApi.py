@@ -64,6 +64,7 @@ QUERYS= {
     "getFinanceFromUser": "SELECT * FROM informacionFinanciera WHERE idUser = %s",
     "insertInformacionFinanciera": "INSERT INTO informacionFinanciera ([idUser],[banco],[cuenta],[tipoCuenta], contentHash) VALUES (%d,%s,%s,%s,%s)",
     "updateInformacionFinanciera": "UPDATE informacionFinanciera SET [banco] = %s, [cuenta] = %s, [tipoCuenta] = %s, [contentHash]=%s WHERE idUser = %d",
+    "getPostFromUser": "SELECT * FROM post WHERE idOwner = %d",
 }
 
 regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
@@ -223,20 +224,28 @@ def rolesManagement():
     finally:
         conn.close()
         return Response(json.dumps(retorno), status, mimetype='application/json')
-    
+
 @app.route('/post', methods=['POST', 'GET'])
-def postManagement():
+@app.route('/post/<usr>', methods=['GET', 'POST'])
+def postManagement(usr=None):
     conn, cursor = connectionDatabase()
     status = 500
     retorno = []
     try:
         if request.method == 'GET':
-            query = QUERYS['getAllPosts']
-            cursor.execute(query)
-            logger.info(f"Query: {query}")
-            response = cursor.fetchall()
-            status = 200
-            retorno = response
+            if usr is None:
+                query = QUERYS['getAllPosts']
+                cursor.execute(query)
+                logger.info(f"Query: {query}")
+                response = cursor.fetchall()
+                status = 200
+                retorno = response
+            else:
+                query = QUERYS['getPostFromUser']
+                cursor.execute(query, (usr,))
+                response = cursor.fetchall()
+                status = 200
+                retorno = response
         elif request.method == 'POST':
             content = request.json
             query = QUERYS['insertPost']
@@ -492,6 +501,3 @@ def logout():
         )
     )
     
-@app.route("/")
-def home():
-    return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))

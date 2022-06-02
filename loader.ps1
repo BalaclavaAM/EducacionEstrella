@@ -1,0 +1,1 @@
+python .\databaseLoader.py
